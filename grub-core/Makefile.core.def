@@ -1669,6 +1669,7 @@ module = {
   arm64 = loader/arm64/linux.c;
   common = loader/linux.c;
   common = lib/cmdline.c;
+  common = loader/android_bootimg.c;
   enable = noemu;
 };
 
