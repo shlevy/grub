@@ -4,6 +4,7 @@
 #include <grub/misc.h>
 #include <grub/file.h>
 #include <grub/mm.h>
+#include <grub/android_bootimg.h>
 
 struct newc_head
 {
@@ -199,7 +200,11 @@ grub_initrd_init (int argc, char *argv[],
 	  newc = 0;
 	}
       grub_file_filter_disable_compression ();
-      initrd_ctx->components[i].file = grub_file_open (fname);
+      if (grub_memcmp (fname, "android_bootimg:", sizeof "android_bootimg:" - 1) == 0)
+        grub_android_bootimg_load_initrd (fname + sizeof "android_bootimg:" - 1,
+                                          &initrd_ctx->components[i].file);
+      else
+        initrd_ctx->components[i].file = grub_file_open (fname);
       if (!initrd_ctx->components[i].file)
 	{
 	  grub_initrd_close (initrd_ctx);
