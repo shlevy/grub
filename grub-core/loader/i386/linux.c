@@ -35,6 +35,7 @@
 #include <grub/i18n.h>
 #include <grub/lib/cmdline.h>
 #include <grub/linux.h>
+#include <grub/android_bootimg.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -695,7 +696,13 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  file = grub_file_open (argv[0]);
+  char android_cmdline[BOOT_ARGS_SIZE];
+  android_cmdline[0] = '\0';
+  if (grub_memcmp (argv[0], "android_bootimg:", sizeof "android_bootimg:" - 1) == 0)
+    grub_android_bootimg_load_kernel (argv[0] + sizeof "android_bootimg:" - 1,
+                                      &file, android_cmdline);
+  else
+      file = grub_file_open (argv[0]);
   if (! file)
     goto fail;
 
@@ -1008,12 +1015,20 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   linux_cmdline = grub_zalloc (maximal_cmdline_size + 1);
   if (!linux_cmdline)
     goto fail;
-  grub_memcpy (linux_cmdline, LINUX_IMAGE, sizeof (LINUX_IMAGE));
+  grub_size_t cmdline_offset = 0;
+  if (android_cmdline[0])
+    {
+      cmdline_offset = grub_strlen (android_cmdline) + 1;
+      grub_memcpy (linux_cmdline, android_cmdline, cmdline_offset - 1);
+      linux_cmdline[cmdline_offset - 1] = ' ';
+    }
+  grub_memcpy (linux_cmdline + cmdline_offset, LINUX_IMAGE, sizeof (LINUX_IMAGE));
+  cmdline_offset += sizeof LINUX_IMAGE - 1;
   grub_create_loader_cmdline (argc, argv,
-			      linux_cmdline
-			      + sizeof (LINUX_IMAGE) - 1,
-			      maximal_cmdline_size
-			      - (sizeof (LINUX_IMAGE) - 1));
+                              linux_cmdline
+                              + cmdline_offset,
+                              maximal_cmdline_size
+                              - cmdline_offset);
 
   len = prot_file_size;
   if (grub_file_read (file, prot_mode_mem, len) != len && !grub_errno)
