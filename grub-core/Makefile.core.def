@@ -2327,3 +2327,8 @@ module = {
   common = loader/i386/xen_file64.c;
   extra_dist = loader/i386/xen_fileXX.c;
 };
+
+module = {
+  name = android_bcb;
+  common = android/android_bcb.c;
+};
